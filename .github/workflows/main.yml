@@ -1,0 +1,41 @@
+name: Update mta.yaml on merge from dev to main
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  update-mta:
+    # Solo ejecutar si el PR fue mergeado y viene de dev a main
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'dev'
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        ref: main  # Checkout la rama main
+        fetch-depth: 0  # Necesario para poder hacer push luego
+        
+    - name: Replace actions with actionsdev in mta.yaml
+      run: |
+        # Verificar si el archivo existe
+        if [ -f "mta.yaml" ]; then
+          # Hacer el reemplazo
+          sed -i 's/actions/actionsdev/g' mta.yaml
+          
+          # Configurar git
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          # Hacer commit y push de los cambios
+          git add mta.yaml
+          git commit -m "Automated update: replaced actions with actionsdev in mta.yaml after merge from dev"
+          git push
+        else
+          echo "mta.yaml file not found. No changes made."
+          exit 0
+        fi
