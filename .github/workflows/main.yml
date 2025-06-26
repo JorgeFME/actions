@@ -49,7 +49,7 @@ jobs:
           echo "xs-security.json not found"
         fi
         
-     - name: Update manifest.json (versión robusta)
+    - name: Update manifest.json (versión robusta)
       run: |
         if [ -f "webapp/manifest.json" ]; then
           jq 'walk(
