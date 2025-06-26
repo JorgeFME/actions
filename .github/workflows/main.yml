@@ -75,22 +75,22 @@ jobs:
         fi
         
     - name: Update package.json (IDs específicos)
-  run: |
-    if [ -f "package.json" ]; then
-      jq ' 
-        .name |= sub("^actions$"; "actionsdev") |
-        .scripts |= with_entries(
-          .value |= (
-            if type == "string" then 
-              gsub("actions"; "actionsdev") 
-            else . end
-          )
-        )
-      ' package.json > tmp.json && mv tmp.json package.json
-      echo "package.json updated"
-    else
-      echo "package.json not found"
-    fi
+      run: |
+        if [ -f "package.json" ]; then
+          jq ' 
+            .name |= sub("^actions$"; "actionsdev") |
+            .scripts |= with_entries(
+              .value |= (
+                if type == "string" then 
+                  gsub("actions"; "actionsdev") 
+                else . end
+              )
+            )
+          ' package.json > tmp.json && mv tmp.json package.json
+          echo "package.json updated"
+        else
+          echo "package.json not found"
+        fi
 
         
     - name: Update ui5.yaml (IDs específicos)
