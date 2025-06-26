@@ -49,7 +49,7 @@
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
-          "bundleName": "actions.i18n.i18n"
+          "bundleName": "actionsdev.i18n.i18n"
         }
       }
     },
@@ -68,13 +68,13 @@
         "transition": "slide",
         "type": "View",
         "viewType": "XML",
-        "path": "actions.view",
+        "path": "actionsdev.view",
         "async": true,
-        "viewPath": "actions.view"
+        "viewPath": "actionsdev.view"
       },
       "routes": [
         {
-          "name": "RouteActionsView",
+          "name": "RouteActionsdevView",
           "pattern": ":?query:",
           "target": [
             "TargetActionsView"
@@ -83,13 +83,13 @@
       ],
       "targets": {
         "TargetActionsView": {
-          "id": "ActionsView",
-          "name": "ActionsView"
+          "id": "ActionsdevView",
+          "name": "ActionsdevView"
         }
       }
     },
     "rootView": {
-      "viewName": "actions.view.App",
+      "viewName": "actionsdev.view.App",
       "type": "XML",
       "id": "App",
       "async": true
