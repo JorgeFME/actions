@@ -1,0 +1,125 @@
+name: Update all config files on merge from dev to main
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  update-configs:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'dev'
+    
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        ref: main
+        fetch-depth: 0
+        
+    - name: Install jq
+      run: sudo apt-get install -y jq
+      
+    - name: Update mta.yaml (IDs específicos)
+      run: |
+        if [ -f "mta.yaml" ]; then
+          # Reemplazar IDs de aplicación pero no otros usos de "actions"
+          sed -i 's/\(id\|name\|service\): actions$/\1: actionsdev/' mta.yaml
+          sed -i 's/\(id\|name\|service\): "actions"$/\1: "actionsdev"/' mta.yaml
+          echo "mta.yaml updated"
+        else
+          echo "mta.yaml not found"
+        fi
+        
+    - name: Update xs-security.json (IDs específicos)
+      run: |
+        if [ -f "xs-security.json" ]; then
+          jq 'walk(if type == "object" then 
+                with_entries(if .key | test("^(id|name|service)$") then 
+                  .value |= (if type == "string" then gsub("^actions$"; "actionsdev") else . end) 
+                else . end) 
+              else . end)' xs-security.json > tmp.json && mv tmp.json xs-security.json
+          echo "xs-security.json updated"
+        else
+          echo "xs-security.json not found"
+        fi
+        
+    - name: Update manifest.json (IDs y rutas específicas)
+      run: |
+        if [ -f "webapp/manifest.json" ]; then
+          jq '
+            # Actualizar propiedades directas
+            .sap.app.id = "actionsdev" |
+            .sap.cloud.service = "actionsdev" |
+            
+            # Actualizar bundleName
+            (.sap.ui5.models.i18n.settings.bundleName) |= sub("^actions\\."; "actionsdev.") |
+            
+            # Actualizar rutas de vistas
+            (.sap.ui5.routing.config.path) |= sub("^actions\\.view$"; "actionsdev.view") |
+            (.sap.ui5.routing.config.viewPath) |= sub("^actions\\.view$"; "actionsdev.view") |
+            
+            # Actualizar nombre de vista raíz
+            (.sap.ui5.rootView.viewName) |= sub("^actions\\.view\\.App$"; "actionsdev.view.App") |
+            
+            # Actualizar nombres en routing
+            (.sap.ui5.routing.routes[].name) |= sub("^RouteActions"; "RouteActionsdev") |
+            (.sap.ui5.routing.targets | with_entries(
+              .value.id |= sub("^Actions"; "Actionsdev") |
+              .value.name |= sub("^Actions"; "Actionsdev")
+            ))
+          ' webapp/manifest.json > tmp.json && mv tmp.json webapp/manifest.json
+          
+          echo "manifest.json updated"
+        else
+          echo "webapp/manifest.json not found"
+        fi
+        
+    - name: Update package.json (IDs específicos)
+      run: |
+        if [ -f "package.json" ]; then
+          jq '.name |= sub("^actions$"; "actionsdev")' package.json > tmp.json && mv tmp.json package.json
+          echo "package.json updated"
+        else
+          echo "package.json not found"
+        fi
+        
+    - name: Update ui5.yaml (IDs específicos)
+      run: |
+        if [ -f "ui5.yaml" ]; then
+          sed -i 's/\(id\|name\|service\): actions$/\1: actionsdev/' ui5.yaml
+          sed -i 's/\(id\|name\|service\): "actions"$/\1: "actionsdev"/' ui5.yaml
+          echo "ui5.yaml updated"
+        else
+          echo "ui5.yaml not found"
+        fi
+        
+    - name: Update xs-app.json (IDs específicos)
+      run: |
+        if [ -f "xs-app.json" ]; then
+          jq 'walk(if type == "object" then 
+                with_entries(if .key | test("^(id|name|service)$") then 
+                  .value |= (if type == "string" then gsub("^actions$"; "actionsdev") else . end) 
+                else . end) 
+              else . end)' xs-app.json > tmp.json && mv tmp.json xs-app.json
+          echo "xs-app.json updated"
+        else
+          echo "xs-app.json not found"
+        fi
+        
+    - name: Commit and push changes
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add .
+        if git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Automated update: Replaced 'actions' with 'actionsdev' in all config files (IDs, paths and routes)"
+          git push
+        fi
